@@ -4,6 +4,7 @@
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-222222?style=flat-square&logo=github)
 
 > 🏆 Projet réalisé pour le défi [DevChallenges Week-52 - Liste de Résolutions](https://devchallenges.yoandev.co/challenge/week-52/)
 
@@ -53,8 +54,34 @@ Aucune installation requise ! C'est une application **100% front-end**.
 
 ```
 week52/
-├── index.html    # Application complète (HTML + CSS + JS)
-└── README.md     # Documentation
+├── .github/
+│   └── workflows/
+│       └── deploy.yml   # CI/CD GitHub Actions
+├── index.html           # Application complète (HTML + CSS + JS)
+└── README.md            # Documentation
+```
+
+## 🚀 Déploiement (CI/CD)
+
+L'application est automatiquement déployée sur **GitHub Pages** à chaque push sur la branche `main`.
+
+### Configuration requise
+
+1. Allez dans les **Settings** de votre dépôt GitHub
+2. Dans **Pages** (menu de gauche)
+3. Sous **Build and deployment** :
+   - **Source** : sélectionnez `GitHub Actions`
+
+### Workflow
+
+Le fichier `.github/workflows/deploy.yml` configure le déploiement automatique :
+- ✅ Se déclenche à chaque push sur `main`
+- ✅ Peut être lancé manuellement depuis l'onglet **Actions**
+- ✅ Déploie le contenu sur GitHub Pages
+
+Votre application sera accessible à :
+```
+https://votre-username.github.io/week52/
 ```
 
 ## 🛠️ Technologies Utilisées
