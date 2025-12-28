@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Résolutions - Win 3.11</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* --- WIN 3.11 SYSTEM COLORS --- */
+        :root {
+            --win-teal: #008080;
+            --win-gray: #c0c0c0;
+            --win-gray-dark: #808080;
+            --win-white: #ffffff;
+            --win-black: #000000;
+            --win-blue: #000080; /* Title bar */
+            --bsod-blue: #0000AA;
+            --font-main: 'VT323', monospace;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+
+        body {
+            background-color: var(--win-teal);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: var(--font-main);
+            overflow: hidden;
+            font-size: 18px;
+        }
+
+        /* --- WINDOW FRAME --- */
+        .window {
+            width: 600px;
+            height: 550px;
+            background-color: var(--win-gray);
+            border: 2px solid;
+            border-color: var(--win-white) var(--win-black) var(--win-black) var(--win-white);
+            padding: 3px;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* --- TITLE BAR --- */
+        .title-bar {
+            background-color: var(--win-blue);
+            color: var(--win-white);
+            padding: 4px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.4rem;
+            margin-bottom: 2px;
+            cursor: default;
+        }
+
+        .control-box {
+            width: 22px;
+            height: 22px;
+            background: var(--win-gray);
+            border: 1px solid;
+            border-color: var(--win-white) var(--win-black) var(--win-black) var(--win-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .control-box:active { border-color: var(--win-black) var(--win-white) var(--win-white) var(--win-black); }
+
+        /* --- MENUS --- */
+        .menu-bar {
+            display: flex;
+            padding: 2px 0;
+            border-bottom: 1px solid var(--win-gray-dark);
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .menu-item { 
+            padding: 2px 10px; 
+            cursor: pointer; 
+            position: relative;
+        }
+        .menu-item:hover { background-color: var(--win-blue); color: var(--win-white); }
+        .menu-item u { text-decoration: underline; }
+
+        /* Dropdowns */
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--win-white);
+            border: 1px solid var(--win-black);
+            min-width: 150px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 5px 5px 5px rgba(0,0,0,0.3);
+            z-index: 100;
+            color: black;
+        }
+        .dropdown.show { display: flex; }
+        .dropdown div {
+            padding: 5px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .dropdown div:hover {
+            background-color: var(--win-blue);
+            color: var(--win-white);
+        }
+        .separator { border-bottom: 1px solid var(--win-gray-dark); margin: 2px 0; padding: 0 !important; height: 1px; }
+
+        /* --- FORMS & INPUTS --- */
+        .panel {
+            border: 1px solid var(--win-gray-dark);
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .form-row { display: flex; gap: 10px; margin-bottom: 8px; }
+        .form-col { flex: 1; display: flex; flex-direction: column; }
+        
+        label { font-size: 1rem; margin-bottom: 2px; }
+
+        input, textarea {
+            background: var(--win-white);
+            border: 2px solid;
+            border-color: var(--win-gray-dark) var(--win-white) var(--win-white) var(--win-gray-dark);
+            font-family: var(--font-main);
+            font-size: 1.2rem;
+            padding: 4px;
+            outline: none;
+        }
+        textarea { resize: none; height: 50px; }
+
+        /* --- BUTTONS --- */
+        .win-btn {
+            background-color: var(--win-gray);
+            font-family: var(--font-main);
+            font-size: 1.1rem;
+            padding: 4px 15px;
+            border: 2px solid;
+            border-color: var(--win-white) var(--win-black) var(--win-black) var(--win-white);
+            cursor: pointer;
+            text-transform: uppercase;
+            min-width: 80px;
+        }
+        .win-btn:active {
+            border-color: var(--win-black) var(--win-white) var(--win-white) var(--win-black);
+            transform: translate(1px, 1px);
+        }
+
+        /* --- LIST VIEW --- */
+        .list-container {
+            flex-grow: 1;
+            background: var(--win-white);
+            border: 2px solid;
+            border-color: var(--win-gray-dark) var(--win-white) var(--win-white) var(--win-gray-dark);
+            overflow-y: scroll;
+            padding: 4px;
+        }
+        
+        /* Scrollbar Retro */
+        .list-container::-webkit-scrollbar { width: 18px; }
+        .list-container::-webkit-scrollbar-track { background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='); } /* Dotted pattern simulation */
+        .list-container::-webkit-scrollbar-thumb { background: var(--win-gray); border: 2px outset #fff; }
+
+        .res-item {
+            border: 1px dashed transparent;
+            padding: 4px;
+            margin-bottom: 2px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            color: black;
+        }
+        .res-item:hover { border: 1px dashed var(--win-black); }
+        
+        .res-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; }
+        .res-desc { font-size: 1rem; color: #444; margin-top: 2px; padding-left: 10px; }
+        .res-meta { display: flex; justify-content: space-between; margin-top: 5px; align-items: center; border-top: 1px dotted #ccc; padding-top: 4px;}
+
+        /* STATUS BADGES */
+        .status-badge { padding: 0 5px; font-size: 0.9rem; border: 1px solid black; }
+        .st-todo { background: var(--win-white); color: black; }
+        .st-done { background: var(--win-teal); color: white; }
+        .st-abandoned { background: #800000; color: white; text-decoration: line-through; }
+
+        /* --- STATUS ACTIONS --- */
+        .actions-row { display: flex; gap: 5px; }
+        .mini-btn { font-size: 0.8rem; padding: 0 4px; height: 20px; }
+
+        /* --- BSOD (Blue Screen Of Death) --- */
+        #bsod {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--bsod-blue);
+            color: var(--win-white);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace; /* Vraie police système brute */
+            text-align: center;
+            padding: 50px;
+        }
+        .bsod-title { background: var(--win-gray); color: var(--bsod-blue); padding: 2px 10px; margin-bottom: 20px; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <input type="file" id="fileInput" style="display:none" onchange="importData(this)">
+
+    <div class="window" id="appWindow">
+        
+        <div class="title-bar">
+            <div class="control-box" onclick="alert('Opération illégale.')">-</div>
+            <div style="flex-grow:1; text-align:center; font-weight:bold;">RESOLUTIONS.EXE</div>
+            <div class="control-box">▼</div>
+        </div>
+
+        <div class="menu-bar">
+            <div class="menu-item" onclick="toggleMenu('menuFile')"><u>F</u>ichier
+                <div id="menuFile" class="dropdown">
+                    <div onclick="saveLocal()">Enregistrer <span style="float:right">Ctrl+S</span></div>
+                    <div onclick="exportData()">Enregistrer sous...</div>
+                    <div class="separator"></div>
+                    <div onclick="triggerImport()">Ouvrir...</div>
+                    <div class="separator"></div>
+                    <div onclick="window.close()">Quitter</div>
+                </div>
+            </div>
+            
+            <div class="menu-item"><u>E</u>dition</div>
+            
+            <div class="menu-item" onclick="toggleMenu('menuHelp')"><u>A</u>ide
+                <div id="menuHelp" class="dropdown">
+                    <div onclick="alert('Aide non installée sur le disque C:')">Index</div>
+                    <div class="separator"></div>
+                    <div onclick="triggerBSOD()">A propos...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="form-row">
+                <div class="form-col" style="flex:2">
+                    <label>Intitulé :</label>
+                    <input type="text" id="inpTitle" autocomplete="off">
+                </div>
+                <div class="form-col" style="flex:1">
+                    <label>Date butoir :</label>
+                    <input type="text" id="inpDate" placeholder="JJ/MM/AAAA">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-col">
+                    <label>Description :</label>
+                    <textarea id="inpDesc"></textarea>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <button class="win-btn" onclick="addItem()">Ajouter</button>
+            </div>
+        </div>
+
+        <div class="list-container" id="list">
+            </div>
+
+        <div style="margin-top:5px; border-top:1px solid gray; padding-top:2px; font-size:1rem;">
+            <span id="statusBar">Prêt.</span>
+        </div>
+    </div>
+
+    <div id="bsod" onclick="killBSOD()">
+        <div class="bsod-title">Windows</div>
+        <p>Une erreur fatale 0E est apparue à 0028:C0011E36 dans le VXD VMM(01) +<br>
+           00010E36. L'application actuelle va se terminer.</p>
+        <br>
+        <p>* Appuyez sur n'importe quelle touche pour terminer l'application.</p>
+        <p>* Appuyez sur CTRL+ALT+SUPPR pour redémarrer votre ordinateur. Vous<br>
+           perdrez toutes les informations non sauvegardées dans toutes les applications.</p>
+        <br>
+        <p style="text-align:center">Appuyez sur une touche pour continuer _</p>
+    </div>
+
+    <script>
+        // --- DATA STATE ---
+        let resolutions = JSON.parse(localStorage.getItem('win31_data')) || [];
+
+        // --- DOM ELEMENTS ---
+        const listEl = document.getElementById('list');
+        const inpTitle = document.getElementById('inpTitle');
+        const inpDate = document.getElementById('inpDate');
+        const inpDesc = document.getElementById('inpDesc');
+        const statusBar = document.getElementById('statusBar');
+
+        // --- INIT ---
+        render();
+
+        // --- MENU LOGIC ---
+        function toggleMenu(id) {
+            const el = document.getElementById(id);
+            const isVisible = el.style.display === 'flex';
+            // Hide all first
+            document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+            // Toggle specific
+            if (!isVisible) {
+                el.style.display = 'flex';
+                event.stopPropagation(); // Prevent document click from closing immediately
+            }
+        }
+
+        // Close menus on click outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+        });
+
+        // --- CRUD LOGIC ---
+        function addItem() {
+            if(!inpTitle.value.trim()) {
+                statusBar.innerText = "Erreur: Le titre est requis.";
+                return;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                title: inpTitle.value,
+                date: inpDate.value || 'Indéterminé',
+                desc: inpDesc.value,
+                status: 'todo' // todo, done, abandoned
+            };
+
+            resolutions.push(newItem);
+            saveLocal();
+            render();
+            
+            // Reset form
+            inpTitle.value = '';
+            inpDate.value = '';
+            inpDesc.value = '';
+            statusBar.innerText = "Élément ajouté à la base de registre.";
+        }
+
+        function setStatus(id, newStatus) {
+            const item = resolutions.find(r => r.id === id);
+            if(item) {
+                item.status = newStatus;
+                saveLocal();
+                render();
+                statusBar.innerText = "Statut mis à jour.";
+            }
+        }
+
+        function render() {
+            listEl.innerHTML = '';
+            
+            if(resolutions.length === 0) {
+                listEl.innerHTML = '<div style="padding:10px; color:gray;">(Aucun fichier trouvé)</div>';
+                return;
+            }
+
+            resolutions.forEach(res => {
+                const li = document.createElement('div');
+                li.className = 'res-item';
+                
+                // Determine visuals based on status
+                let badgeClass = 'st-todo';
+                let statusText = 'EN COURS';
+                if(res.status === 'done') { badgeClass = 'st-done'; statusText = 'TERMINÉ'; }
+                if(res.status === 'abandoned') { badgeClass = 'st-abandoned'; statusText = 'ABANDON'; }
+
+                li.innerHTML = `
+                    <div class="res-header">
+                        <span>${res.title}</span>
+                        <span class="status-badge ${badgeClass}">${statusText}</span>
+                    </div>
+                    <div class="res-desc">${res.desc}</div>
+                    <div class="res-meta">
+                        <span>Échéance: ${res.date}</span>
+                        <div class="actions-row">
+                            <button class="win-btn mini-btn" onclick="setStatus(${res.id}, 'todo')">Reprendre</button>
+                            <button class="win-btn mini-btn" onclick="setStatus(${res.id}, 'done')">Finir</button>
+                            <button class="win-btn mini-btn" onclick="setStatus(${res.id}, 'abandoned')">Abandon</button>
+                        </div>
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        // --- STORAGE & IMPORT/EXPORT ---
+        function saveLocal() {
+            localStorage.setItem('win31_data', JSON.stringify(resolutions));
+            statusBar.innerText = "Sauvegarde effectuée.";
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(resolutions));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "RESOLUTIONS.RES");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            statusBar.innerText = "Fichier exporté vers A:\\";
+        }
+
+        function triggerImport() {
+            document.getElementById('fileInput').click();
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if(Array.isArray(json)) {
+                        resolutions = json;
+                        saveLocal();
+                        render();
+                        statusBar.innerText = "Données chargées avec succès.";
+                    } else {
+                        alert("Format de fichier invalide.");
+                    }
+                } catch(err) {
+                    alert("Erreur de lecture du fichier.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- EASTER EGG (BSOD) ---
+        function triggerBSOD() {
+            document.getElementById('bsod').style.display = 'flex';
+            // Simulate full screen lock
+            document.body.style.cursor = 'none';
+        }
+
+        function killBSOD() {
+            document.getElementById('bsod').style.display = 'none';
+            document.body.style.cursor = 'default';
+        }
+
+        // --- DRAG WINDOW ---
+        // (Simple drag logic preserved from previous version)
+        const windowEl = document.getElementById('appWindow');
+        const titleBar = document.querySelector('.title-bar');
+        let isDragging = false, startX, startY, initialLeft = 0, initialTop = 0;
+
+        titleBar.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            // Hacky way to get current transform
+            const style = window.getComputedStyle(windowEl);
+            const matrix = new WebKitCSSMatrix(style.transform);
+            initialLeft = matrix.m41;
+            initialTop = matrix.m42;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                windowEl.style.transform = `translate(${initialLeft + dx}px, ${initialTop + dy}px)`;
+            }
+        });
+        document.addEventListener('mouseup', () => isDragging = false);
+
+    </script>
+</body>
+</html>
